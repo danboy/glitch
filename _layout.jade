@@ -1,0 +1,10 @@
+!!!
+html
+  head
+    link(rel="stylesheet", href="/css/main.css")
+  body
+    != yield
+    script(src='/js/glitch-canvas.min.js')
+    script(src='/js/filters.js')
+    script(src='/js/glitch.js')
+    yield scripts
