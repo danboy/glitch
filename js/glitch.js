@@ -1,84 +1,93 @@
-var JS = {
-  merge: function(obj1, obj2){
-    for (var attrname in obj2){
-      obj1[attrname] = obj2[attrname];
-    }
-    return obj1;
-  },
-  size: function(obj){
-    var size = 0, key;
-      for (key in obj) {
-      if (obj.hasOwnProperty(key)) size++;
-    }
-    return size;
-  }
-};
-var Glitch = function(element, images, options, cb){
-  if(!this.canCanvas){return false;}
-  this.options = JS.merge({
-    increment: 30,
-    canvasName: 'glitch',
-    filters: ['glitch', 'red', 'pixelate'],
-    delay: 10000,
-    seed: 0,
-    amount: 0,
-    frames: 15,
-    iterations: 1
-  }, options);
+var ImageLoader = function(el, images) {
+  this.el = document.querySelectorAll(el)[0];
+  this.canvas = document.createElement('canvas');
   this.images = images;
-  this.el = document.querySelectorAll(element)[0];
-  this.createCanvas();
-  this.start();
+  this.context = this.canvas.getContext('2d');
+  this.animationLength = 1000;
+  this.animationFrames = 10;
+  this.currentImageIndex = 0;
+  this.reverseImages = false;
 };
 
-Glitch.prototype = {
-  start: function(){
-    this.selectImage();
+ImageLoader.prototype = {
+  init: function(){
+    this.appendCanvas();
+    this.drawImage();
   },
-  animateIn: function(data){
-    for(i=0;i<this.options.frames;i++){
-      this.applyFilters(data);
-    }
+
+  appendCanvas: function() {
+    return this.el.appendChild(this.canvas);
   },
-  canCanvas: function(){
-    return !!document.createElement('canvas').getContext;
+  selectImage: function(){
+    return this.images[Math.floor(Math.random()*this.images.length)];
   },
-  createCanvas: function(){
-    var el = this.el;
-    var canvas = this.canvas = document.createElement('canvas');
-    this.el.appendChild(canvas);
-  },
-  selectImage: function(cb){
-    this.image = this.images[Math.floor(Math.random()*this.images.length)];
-    this.getPixels(this.image, this.animateIn.bind(this));
-  },
-  getPixels: function(src, cb) {
-    var img = new Image();
-    img.src = src;
-    img.onload = function(){
-      var canvas = this.canvas;
-      canvas.setAttribute('width', img.width);
-      canvas.setAttribute('height', img.height);
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      cb(ctx.getImageData(0,0,img.width,img.height));
+
+  drawImage: function(){
+    this.isStopped = false;
+    var image = new Image();
+    image.src = this.selectImage();
+    image.onload = function(){
+      var filteredImages = this.createFilteredImages(image);
     }.bind(this);
   },
-  applyFilters: function(data){
-    var filters = this.options.filters;
-    var length = JS.size(this.filters);
-    for (i=0;i<this.options.iterations;i++){
-      var filter = filters[Math.floor(Math.random()*filters.length)];
-      console.log('filter', filter);
-      data = this.filters[filter](data, this.canvas);
+
+  applyImageToCanvas: function(image){
+    this.canvas.setAttribute('width', image.width);
+    this.canvas.setAttribute('height', image.height);
+
+    this.context.putImageData(image, 0, 0);
+  },
+
+  intervalLength:function(){
+    return this.animationLength/(this.animationFrames+1);
+  },
+
+  createFilteredImages: function(image){
+    var filteredArray = [];
+
+    for(var i=0; i< this.animationFrames; i++) {
+      var filter = (i == 0) ? 'unfiltered' : 'pixelate';
+      filteredArray[i] = this.filterImage(image, filter);
+    };
+
+    this.animateImages(filteredArray);
+  },
+
+  animateImages: function(images){
+    if (this.isStopped) {return};
+
+    var i = this.currentImageIndex;
+
+    if(this.reverseImages){
+      this.reverseImages = false;
+      var images = images.reverse();
+    } else {
+      this.reverseImages = true;
+      var images = images;
     }
-    var ctx = this.canvas.getContext('2d');
-    this.renderImage(data, ctx);
+
+    if (i<images.length){
+      setTimeout(function(){
+        this.applyImageToCanvas(images[i]);
+        this.currentImageIndex++;
+        this.animateImages(images);
+      }.bind(this), this.intervalLength());
+    } else {
+      this.currentImageIndex = 0;
+      this.drawImage();
+    }
   },
-  renderImage: function(data, ctx){
-    ctx.putImageData(data, 0, 0);
+
+  stopAnimate: function(){
+    this.isStopped = true;
   },
-  filters: Filters
+
+  filterImage: function(image, filter){
+    var glitch = new Filter(image);
+    return glitch.applyFilter(filter);
+  }
 };
 
-var myGlitch = new Glitch('.image',['/images/one.jpg','/images/two.jpg','/images/three.jpg'], {canvasName: 'bg', delay: 2000} );
+
+var myIL = new ImageLoader('.image',['/images/one.jpg','/images/two.jpg','/images/three.jpg']);
+myIL.init();
