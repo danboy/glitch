@@ -14,8 +14,12 @@ Filter.prototype = {
 
     return this.context.getImageData(0,0, width, height);
   },
-  applyFilter: function(filter) {
-    return this.filters[filter](this.imageData(), this.canvas);
+  applyFilters: function(filters) {
+    this.imageData = this.imageData();
+    for (var i=filters.length-1; i >= 0; i-=1){
+      this.filters[filters[i]](this.imageData, this.canvas);
+    }
+    return this.imageData;
   },
 
   filters: {
@@ -68,7 +72,8 @@ Filter.prototype = {
     }
   , redNoise: function(pixels){
       var d = pixels.data;
-      for(var i=0;i<d.length;i+=4){
+      var dataLength = d.length;
+      for(var i=0;i<dataLength;i+=4){
         var end = Math.floor(Math.random()*i);
         var start = Math.floor(Math.random()*end);
         d[i] = d[start];

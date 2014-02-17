@@ -7,6 +7,7 @@ var ImageLoader = function(el, images) {
   this.animationFrames = 10;
   this.currentImageIndex = 0;
   this.reverseImages = false;
+  this.filters = ['pixelate', 'glitch'];
 };
 
 ImageLoader.prototype = {
@@ -46,8 +47,8 @@ ImageLoader.prototype = {
     var filteredArray = [];
 
     for(var i=0; i< this.animationFrames; i++) {
-      var filter = (i == 0) ? 'unfiltered' : 'pixelate';
-      filteredArray[i] = this.filterImage(image, filter);
+      var filters = (i == 0) ? ['unfiltered'] : this.filters;
+      filteredArray[i] = this.filterImage(image, filters);
     };
 
     this.animateImages(filteredArray);
@@ -55,7 +56,6 @@ ImageLoader.prototype = {
 
   animateImages: function(images){
     if (this.isStopped) {return};
-
     var i = this.currentImageIndex;
 
     if(this.reverseImages){
@@ -82,9 +82,9 @@ ImageLoader.prototype = {
     this.isStopped = true;
   },
 
-  filterImage: function(image, filter){
+  filterImage: function(image, filters){
     var glitch = new Filter(image);
-    return glitch.applyFilter(filter);
+    return glitch.applyFilters(filters);
   }
 };
 
