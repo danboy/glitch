@@ -11,5 +11,20 @@ var JS = {
       if (obj.hasOwnProperty(key)) size++;
     }
     return size;
+  },
+  addClass: function(object, className){
+    classNames = className.split(' ');
+    classNames.forEach(function(name){
+      if(!object.classList.contains(name)){
+        object.className += ' '+name
+      }
+    });
+  },
+  removeClass: function(object, className){
+    classNames = className.split(' ');
+    classNames.forEach(function(name){
+      regex = RegExp("(?:^|\\s)" + name + "(?!\\S)", "g");
+      object.className = object.className.replace(regex , '' );
+    })
   }
 };

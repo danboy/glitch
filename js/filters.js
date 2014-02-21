@@ -39,8 +39,8 @@ Filter.prototype = {
       }
       return pixels;
     }
-  , brightness: function(pixels, adjustment) {
-      adjustment = adjustment || 95;
+  , brightness: function(pixels) {
+      var adjustment = 95;
       var d = pixels.data;
       for (var i=0; i<d.length; i+=4) {
         d[i] += adjustment;
@@ -112,25 +112,36 @@ Filter.prototype = {
       return pixels;
     }
   , pixelate: function(pixels, img){
-      var context = img.getContext('2d');
-      context.mozImageSmoothingEnabled = false;
-      context.webkitImageSmoothingEnabled = false;
-      context.imageSmoothingEnabled = false;
+      var ctx = img.getContext('2d');
+      ctx.mozImageSmoothingEnabled = false;
+      ctx.webkitImageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = false;
 
       var size = Math.floor(Math.random()*50)*.01;
       var h = img.height * size;
       var w = img.width * size;
       try {
-        context.drawImage(img, 0, 0, w, h, 0, 0, img.width, img.height);
+        ctx.drawImage(img, 0, 0, w, h, 0, 0, img.width, img.height);
       } catch(e){
+        console.log('ERROR',e);
         return;
       };
 
-      var pixelated = context.getImageData(0,0,img.width,img.height);
-      return pixelated;
+      var data = ctx.getImageData(0,0,img.width,img.height);
+      return data;
     },
     blur: function(pixels){
       return this.convolution(pixels,[ 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9 ]);
+    },
+    scanlines: function(pixels, img){
+      var ctx = img.getContext('2d');
+      ctx.putImageData(pixels, 0, 0);
+      ctx.fillStyle = "rgb(255,255,255)";
+      for (i = 0; i < img.height; i += 3) {
+        ctx.fillRect(0, i, img.width, 2);
+      }
+      var data = ctx.getImageData(0,0,img.width,img.height);
+      return data;
     },
     convolution: function(pixels, weights, opaque) {
       var side = Math.round(Math.sqrt(weights.length));

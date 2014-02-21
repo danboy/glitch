@@ -1,6 +1,8 @@
 var ImageLoader = function(el, images) {
   this.el = document.querySelectorAll(el)[0];
+  JS.addClass(this.el, 'glitch');
   this.canvas = document.createElement('canvas');
+  JS.addClass(this.canvas, 'glitch-canvas');
   this.images = images;
   this.context = this.canvas.getContext('2d');
   this.animationLength = 500;
@@ -8,8 +10,8 @@ var ImageLoader = function(el, images) {
   this.currentImageIndex = 0;
   this.firstRun = true;
   this.reverseImages = false;
-  this.maxTimeout = 20000;
-  this.filters = ['pixelate', 'glitch'];
+  this.maxTimeout = 10000;
+  this.filters = ['scanlines', 'glitch', 'brightness'];
 };
 
 ImageLoader.prototype = {
@@ -19,7 +21,8 @@ ImageLoader.prototype = {
   },
 
   appendCanvas: function() {
-    return this.el.appendChild(this.canvas);
+    this.el.insertBefore(this.canvas, this.el.firstChild);
+    return;
   },
   selectImage: function(){
     return this.images[Math.floor(Math.random()*this.images.length)];
@@ -35,15 +38,18 @@ ImageLoader.prototype = {
   },
 
   applyImageToCanvas: function(image){
+    this.setCanvasClass(image);
     this.canvas.setAttribute('width', image.width);
     this.canvas.setAttribute('height', image.height);
-
     this.context.putImageData(image, 0, 0);
+  },
+
+  setCanvasClass: function(img){
+    return (img.height < img.width) ? this.canvas.setAttribute('class', 'glitch-wide glitch-canvas') : this.canvas.setAttribute('class', 'glitch-tall glitch-canvas') ;
   },
 
   intervalLength:function(){
     var intervalLength = (!this.reverseImages && this.currentImageIndex === 0) ? Math.floor(Math.random()*this.maxTimeout) : this.animationLength/(this.animationFrames+1) ;
-    console.log('timeout',intervalLength);
     return intervalLength;
   },
 
