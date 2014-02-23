@@ -1,17 +1,19 @@
-var ImageLoader = function(el, images) {
+var ImageLoader = function(el, images, options) {
+  this.options = JS.merge({
+    animationLength: 500,
+    animationFrames: 10,
+    delay: 10000,
+    filters: ['scanlines', 'glitch', 'brightness']
+  }, options)
   this.el = document.querySelectorAll(el)[0];
   JS.addClass(this.el, 'glitch');
   this.canvas = document.createElement('canvas');
   JS.addClass(this.canvas, 'glitch-canvas');
   this.images = images;
   this.context = this.canvas.getContext('2d');
-  this.animationLength = 500;
-  this.animationFrames = 10;
   this.currentImageIndex = 0;
   this.firstRun = true;
   this.reverseImages = false;
-  this.maxTimeout = 10000;
-  this.filters = ['scanlines', 'glitch', 'brightness'];
 };
 
 ImageLoader.prototype = {
@@ -49,22 +51,23 @@ ImageLoader.prototype = {
   },
 
   intervalLength:function(){
-    var intervalLength = (!this.reverseImages && this.currentImageIndex === 0) ? Math.floor(Math.random()*this.maxTimeout) : this.animationLength/(this.animationFrames+1) ;
+    var intervalLength = (!this.reverseImages && this.currentImageIndex === 0) ? Math.floor(Math.random()*this.options.delay) : this.options.animationLength/(this.options.animationFrames+1) ;
     return intervalLength;
   },
 
   createFilteredImages: function(image){
     var filteredArray = [];
 
-    for(var i=0; i< this.animationFrames; i++) {
-      var filters = (i == 0) ? ['unfiltered'] : this.filters;
-      filteredArray[i] = this.filterImage(image, filters);
+    for(var i=0; i< this.options.animationFrames; i++) {
+      var filters = (i == 0) ? ['unfiltered'] : this.options.filters;
+      filteredArray[i] = this.filterImage(image, filters, i);
     };
 
     if(this.firstRun){
       this.applyImageToCanvas(filteredArray[0]);
       this.firstRun = false;
     }
+    this.filteredArray = filteredArray;
     this.animateImages(filteredArray);
   },
 
@@ -94,13 +97,22 @@ ImageLoader.prototype = {
     }
   },
 
-  stopAnimate: function(){
+  stop: function(){
     this.isStopped = true;
   },
 
-  filterImage: function(image, filters){
-    var glitch = new Filter(image);
-    return glitch.applyFilters(filters);
+  start: function(){
+    this.drawImage();
+  },
+
+  filterImage: function(image, filters, index){
+    var glitch = new Filter(image, index);
+    return glitch.applyFilters(filters, index);
+  },
+  
+  grayscaleImage: function(){
+    var glitch = new Filter(this.filteredArray[0]);
+    this.applyImageToCanvas(glitch.filters['grayscale'](glitch.image, glitch.canvas, 0));
   }
 };
 
