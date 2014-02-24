@@ -14,7 +14,7 @@ var options = {
 var glitch = new ImageLoader('.myClass', arrayOfImages, options);
 ```
 
-## Avaialable Filters
+## Available Filters
 
 * unfiltered
 * grayscale
