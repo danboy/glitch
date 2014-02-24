@@ -1,0 +1,25 @@
+.glitch{
+  position: relative;
+  overflow: hidden;
+}
+.glitch *{
+  position: relative;
+}
+.glitch-canvas{
+  z-index: 0;
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  overflow: hidden;
+}
+.glitch-wide{
+  width: 100%;
+  height: auto;
+}
+.glitch-tall{
+  width: auto;
+  height: 100%;
+}
