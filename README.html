@@ -1,0 +1,35 @@
+<!DOCTYPE html><html><head><link href="http://fonts.googleapis.com/css?family=Archivo+Black" rel="stylesheet" type="text/css"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/glitch.css"></head><body><h1>Glitch</h1>
+<p>A simple JS library to transition images through canvas filters.</p>
+<pre><code class="language-JavaScript">var arrayOfImages = [&#39;/images/imageOne.jpg&#39;, &#39;/images/imageTwo.jpg&#39;];
+var options = {
+    animationLength: 500,
+    animationFrames: 10,
+    delay: 10000,
+    filters: [&#39;scanlines&#39;, &#39;glitch&#39;, &#39;brightness&#39;]
+};
+var glitch = new ImageLoader(&#39;.myClass&#39;, arrayOfImages, options);</code></pre>
+<h2>Available Filters</h2>
+<ul>
+<li>unfiltered</li>
+<li>grayscale</li>
+<li>brightness</li>
+<li>threshold</li>
+<li>noise</li>
+<li>redNoise</li>
+<li>red</li>
+<li>glitch</li>
+<li>blur</li>
+</ul>
+<h2>coming soon</h2>
+<ul>
+<li>pixelate</li>
+<li>scanlines</li>
+<li>and much more...</li>
+</ul>
+<h2>To Do&#39;s</h2>
+<ul>
+<li>break filters into standalone files</li>
+<li>fix pixelate and scanlines</li>
+<li>refactor image import</li>
+</ul>
+<canvas></canvas><script src="/js/helpers.js"></script><script src="/js/filters.js"></script><script src="/js/glitch.js"></script><scripts></scripts></body></html>
