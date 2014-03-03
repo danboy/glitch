@@ -5,9 +5,7 @@ html
     link(rel="stylesheet", href="/css/main.css")
     link(rel="stylesheet", href="/css/glitch.css")
   body
-    != yield
+    block content
     canvas
-    script(src='/js/helpers.js')
-    script(src='/js/filters.js')
-    script(src='/js/glitch.js')
-    yield scripts
+    script(src='/build/glitch.min.js')
+    block scripts

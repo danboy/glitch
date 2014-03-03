@@ -35,11 +35,11 @@ Filter.prototype = {
       // CIE luminance for the RGB
       // The human eye is bad at seeing red and blue, so we de-emphasize them.
       var v = 0.2126*r + 0.7152*g + 0.0722*b;
-      d[i] = d[i+1] = d[i+2] = v
+      d[i] = d[i+1] = d[i+2] = v;
       }
       return pixels;
-    }
-  , brightness: function(pixels) {
+    },
+    brightness: function(pixels) {
       var adjustment = 95;
       var d = pixels.data;
       for (var i=0; i<d.length; i+=4) {
@@ -48,8 +48,8 @@ Filter.prototype = {
         d[i+2] += adjustment;
       }
       return pixels;
-    }
-  , threshold: function(pixels, threshold){
+    },
+    threshold: function(pixels, threshold){
       threshold = threshold || 11;
       var d = pixels.data;
       for (var i=0; i<d.length; i+=4) {
@@ -57,11 +57,11 @@ Filter.prototype = {
         var g = d[i+1];
         var b = d[i+2];
         var v = (0.2126*r + 0.7152*g + 0.0722*b >= threshold) ? 255 : 0;
-        d[i] = d[i+1] = d[i+2] = v
+        d[i] = d[i+1] = d[i+2] = v;
       }
       return pixels;
-    }
-  , noise: function(pixels){
+    },
+    noise: function(pixels){
       var d = pixels.data;
       for(var i=0;i<d.length;i=i+1){
         var end = d[Math.floor(Math.random()*d.length)];
@@ -69,8 +69,8 @@ Filter.prototype = {
         d[Math.floor(Math.random()*d.length)] = d[start];
       }
       return pixels;
-    }
-  , redNoise: function(pixels){
+    },
+    redNoise: function(pixels){
       var d = pixels.data;
       var dataLength = d.length;
       for(var i=0;i<dataLength;i+=4){
@@ -79,8 +79,8 @@ Filter.prototype = {
         d[i] = d[start];
       }
       return pixels;
-    }
-  , red: function (pixels, args) {
+    },
+    red: function (pixels, args) {
     var d = pixels.data;
     for (var i = 0; i < d.length; i += 4) {
       var r = d[i];
@@ -90,45 +90,46 @@ Filter.prototype = {
       d[i + 1] = d[i + 2] = 0;
     }
     return pixels;
-  }
-  , glitch: function(pixels, img, index){
+  },
+  glitch: function(pixels, img, index){
       var glitchAmount = (250*index);
       var data = pixels.data;
       var imgHeight = img.height;
       var imgWidth = img.width;
       var randomNum = Math.floor(Math.random()*glitchAmount);
-      for (var i=0;i<4;i++) {
+      for (var i=0;i<2;i++) {
         var mx = randomNum*i, my = randomNum*i;
         for (var y=0; y<imgHeight; y++) {
           for (var x=0; x<imgWidth; x++) {
             var red = data[((imgWidth * y) + x) * 4];
             var green = data[((imgWidth * y) + x) * 4 + 1];
             var blue = data[((imgWidth * y) + x) * 4 + 2];
-            data[((imgWidth * y) + x) * 4] = red
-            data[((imgWidth * y) + x) * 4 + mx] = green
-            data[((imgWidth * y) + x) * 4 + my] = blue
+            data[((imgWidth * y) + x) * 4] = red;
+            data[((imgWidth * y) + x) * 4 + mx] = green;
+            data[((imgWidth * y) + x) * 4 + my] = blue;
           }
         }
       }
       return pixels;
-    }
-  , pixelate: function(pixels, img){
+    },
+    pixelate: function(pixels, img){
       var ctx = img.getContext('2d');
       ctx.mozImageSmoothingEnabled = false;
       ctx.webkitImageSmoothingEnabled = false;
       ctx.imageSmoothingEnabled = false;
 
-      var size = Math.floor(Math.random()*50)*.01;
+      var size = Math.floor(Math.random()*50)*0.001;
+      if(size <=0){size = 0.4;}
       var h = img.height * size;
       var w = img.width * size;
       try {
-        ctx.drawImage(img, 0, 0, w, h, 0, 0, img.width, img.height);
+        ctx.drawImage(img, 0, 0, w, h);
       } catch(e){
         console.log('ERROR',e);
         return;
-      };
+      }
 
-      var data = ctx.getImageData(0,0,img.width,img.height);
+      var data = ctx.getImageData(0,0, w, h);
       return data;
     },
     blur: function(pixels){
@@ -188,4 +189,4 @@ Filter.prototype = {
       return output;
       }
     }
-}
+};

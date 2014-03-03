@@ -1,31 +1,35 @@
-var ImageLoader = function(el, images, options) {
+var Glitch = function(el, images, options) {
   this.options = JS.merge({
     animationLength: 500,
-    animationFrames: 10,
+    animationFrames: 30,
     delay: 10000,
     filters: ['scanlines', 'glitch', 'brightness']
-  }, options)
+  }, options);
   this.el = document.querySelectorAll(el)[0];
   JS.addClass(this.el, 'glitch');
   this.canvas = document.createElement('canvas');
   JS.addClass(this.canvas, 'glitch-canvas');
-  this.images = images;
   this.context = this.canvas.getContext('2d');
-  this.currentImageIndex = 0;
-  this.firstRun = true;
-  this.reverseImages = false;
+  this.images = images;
+  this.init();
 };
 
-ImageLoader.prototype = {
+Glitch.prototype = {
   init: function(){
+    this.currentImageIndex = 0;
+    this.firstRun = true;
+    this.reverseImages = false;
     this.appendCanvas();
     this.drawImage();
   },
 
   appendCanvas: function() {
+    this.canvas.setAttribute('width', 1900);
+    this.canvas.setAttribute('height', 1080);
     this.el.insertBefore(this.canvas, this.el.firstChild);
     return;
   },
+
   selectImage: function(){
     return this.images[Math.floor(Math.random()*this.images.length)];
   },
@@ -39,11 +43,10 @@ ImageLoader.prototype = {
     }.bind(this);
   },
 
-  applyImageToCanvas: function(image){
-    this.setCanvasClass(image);
-    this.canvas.setAttribute('width', image.width);
-    this.canvas.setAttribute('height', image.height);
-    this.context.putImageData(image, 0, 0);
+  applyDataToCanvas: function(data, offset){
+    offset = offset || 0;
+    this.setCanvasClass(data);
+    this.context.putImageData(data, offset, 0);
   },
 
   setCanvasClass: function(img){
@@ -59,42 +62,44 @@ ImageLoader.prototype = {
     var filteredArray = [];
 
     for(var i=0; i< this.options.animationFrames; i++) {
-      var filters = (i == 0) ? ['unfiltered'] : this.options.filters;
+      var filters = (i === 0) ? ['unfiltered'] : this.options.filters;
       filteredArray[i] = this.filterImage(image, filters, i);
-    };
+    }
 
     if(this.firstRun){
-      this.applyImageToCanvas(filteredArray[0]);
+      this.applyDataToCanvas(filteredArray[0]);
       this.firstRun = false;
     }
+    this.lastArray = this.filteredArray || filteredArray;
     this.filteredArray = filteredArray;
-    this.animateImages(filteredArray);
+    this.animate(filteredArray);
   },
 
-  animateImages: function(images){
-    var intervalLength = this.intervalLength();
-
-    if (this.isStopped) {return};
+  animate: function(images){
+    if(this.isStopped){return false;}
     var i = this.currentImageIndex;
-
-    if(this.reverseImages){
-      this.reverseImages = false;
-      var images = images.reverse();
-    } else {
-      this.reverseImages = true;
-      var images = images;
-    }
-
     if (i<images.length){
       setTimeout(function(){
-        this.applyImageToCanvas(images[i]);
+        var image = images[i];
+        var offset = (i===0) ? 0 : Math.floor(image.width/i);
+        if(i===0){
+          this.canvas.setAttribute('width', image.width);
+          this.canvas.setAttribute('height', image.height);
+        }
+        var fx = (this.options.slide) ? this.slide(image, this.lastArray[i], offset) : this.applyDataToCanvas(image);
         this.currentImageIndex++;
-        this.animateImages(images);
-      }.bind(this), intervalLength);
+        this.animate(images);
+      }.bind(this), this.intervalLength());
     } else {
       this.currentImageIndex = 0;
+      this.applyDataToCanvas(images[0]);
       this.drawImage();
     }
+  },
+
+  slide: function(current, previous, left){
+    this.applyDataToCanvas(current, left);
+    this.applyDataToCanvas(previous, (left-previous.width));
   },
 
   stop: function(){
@@ -112,13 +117,10 @@ ImageLoader.prototype = {
   
   grayscaleImage: function(){
     var glitch = new Filter(this.filteredArray[0]);
-    this.applyImageToCanvas(glitch.filters['grayscale'](glitch.image, glitch.canvas, 0));
+    this.applyDataToCanvas(glitch.filters.grayscale(glitch.image, glitch.canvas, 0));
+  },
+  
+  rollDice: function(odds){
+    return (Math.floor(Math.random()*odds) === 0);
   }
 };
-
-var images = ['/images/FFF_www_ACOW_COL.jpg','/images/FFF_www_BLACKHEART_COL.jpg','/images/FFF_www_DEESKO_COL.jpg','/images/FFF_www_GUMBALL_COL.jpg','/images/FFF_www_PANZERWOLF_COL.jpg','/images/FFF_www_TOPLESSWYTCH_COL.jpg','/images/FFF_www_ALPHAKING_COL.jpg','/images/FFF_www_BLACKSUN_COL.jpg','/images/FFF_www_DREADDOUBLE_COL.jpg','/images/FFF_www_HBI_COL.jpg','/images/FFF_www_POPSKULL_COL.jpg','/images/FFF_www_WARMULLET_COL.jpg','/images/FFF_www_ALPHAKONG_COL.jpg','/images/FFF_www_BOOGOOP_COL.jpg','/images/FFF_www_DREADNAUGHT_COL.jpg','/images/FFF_www_JINX_COL.jpg','/images/FFF_www_RABBID_COL.jpg','/images/FFF_www_ZESZESZES_COL.jpg','/images/FFF_www_AMONAMARTH_COL.jpg','/images/FFF_www_CALQUEEN_COL.jpg','/images/FFF_www_DRUNKMONK_COL.jpg','/images/FFF_www_LASTSUPPER_COL.jpg','/images/FFF_www_RISGOOP_COL.jpg','/images/FFF_www_ZOMBIEDUST_COL.jpg','/images/FFF_www_ANNICA_COL.jpg','/images/FFF_www_CREEPER_COL.jpg','/images/FFF_www_DUSK_COL.jpg','/images/FFF_www_MOLOKO_COL.jpg','/images/FFF_www_RYELIGHTNG_COL.jpg','/images/FFF_www_BACKMASKING_COL.jpg','/images/FFF_www_CSB_COL.jpg','/images/FFF_www_EYEHATE_COL.jpg','/images/FFF_www_MUTINY_COL.jpg','/images/FFF_www_RYETIGER_COL.jpg','/images/FFF_www_BATTLECHARRO_COL.jpg','/images/FFF_www_DARKLORD_COL.jpg','/images/FFF_www_GORCH_COL.jpg','/images/FFF_www_NELSON_COL.jpg','/images/FFF_www_TIBERIAN_COL.jpg'];
-
-var myIL = new ImageLoader('.image', images, {filters: ['glitch'], delay: 20000});
-var myIL2 = new ImageLoader('.image2', images, {filters: ['brightness','red','glitch'], delay: 20000});
-myIL.init();
-myIL2.init();
