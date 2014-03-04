@@ -1,9 +1,9 @@
 var Glitch = function(el, images, options) {
   this.options = JS.merge({
     animationLength: 500,
-    animationFrames: 30,
-    delay: 10000,
-    filters: ['scanlines', 'glitch', 'brightness']
+    animationFrames: 10,
+    delay: 20000,
+    filters: ['red', 'glitch', 'brightness']
   }, options);
   this.el = document.querySelectorAll(el)[0];
   JS.addClass(this.el, 'glitch');
@@ -21,6 +21,7 @@ Glitch.prototype = {
     this.reverseImages = false;
     this.appendCanvas();
     this.drawImage();
+    this.watchViewport();
   },
 
   appendCanvas: function() {
@@ -35,7 +36,7 @@ Glitch.prototype = {
   },
 
   drawImage: function(){
-    this.isStopped = false;
+    if(this.isStopped){return false;}
     var image = new Image();
     image.src = this.selectImage();
     image.onload = function(){
@@ -54,16 +55,17 @@ Glitch.prototype = {
   },
 
   intervalLength:function(){
-    var intervalLength = (!this.reverseImages && this.currentImageIndex === 0) ? Math.floor(Math.random()*this.options.delay) : this.options.animationLength/(this.options.animationFrames+1) ;
+    var intervalLength = (this.currentImageIndex === 0) ? Math.floor(Math.random()*this.options.delay) : this.options.animationLength/(this.options.animationFrames+1);
     return intervalLength;
   },
 
   createFilteredImages: function(image){
+    if(this.isStopped){return false;}
     var filteredArray = [];
 
     for(var i=0; i< this.options.animationFrames; i++) {
       var filters = (i === 0) ? ['unfiltered'] : this.options.filters;
-      filteredArray[i] = this.filterImage(image, filters, i);
+      filteredArray[i] = this.filterImage(image, filters);
     }
 
     if(this.firstRun){
@@ -76,7 +78,7 @@ Glitch.prototype = {
   },
 
   animate: function(images){
-    if(this.isStopped){return false;}
+    if(this.isStopped || !this.inView(this.el)){this.wait(this.animate.bind(this));return false;}
     var i = this.currentImageIndex;
     if (i<images.length){
       setTimeout(function(){
@@ -97,6 +99,10 @@ Glitch.prototype = {
     }
   },
 
+  wait: function(cb){
+    setTimeout(function(){cb(this.filteredArray);}.bind(this), 10000);
+  },
+
   slide: function(current, previous, left){
     this.applyDataToCanvas(current, left);
     this.applyDataToCanvas(previous, (left-previous.width));
@@ -107,19 +113,56 @@ Glitch.prototype = {
   },
 
   start: function(){
-    this.drawImage();
+    this.isStopped = false;
+    //this.animate(this.filteredArray);
   },
 
-  filterImage: function(image, filters, index){
-    var glitch = new Filter(image, index);
-    return glitch.applyFilters(filters, index);
+  filterImage: function(image, filters){
+    var glitch = new Filter(image);
+    return glitch.applyFilters(filters);
+  },
+
+  drawOriginalImage: function(){
+    this.applyDataToCanvas(this.filteredArray[0]);
   },
   
   grayscaleImage: function(){
     var glitch = new Filter(this.filteredArray[0]);
     this.applyDataToCanvas(glitch.filters.grayscale(glitch.image, glitch.canvas, 0));
   },
+
+  watchViewport: function(){
+    window.onscroll = function(){
+      var iv = (this.inView(this.el)) ? this.isStopped = false : this.stop();
+    }.bind(this);
+  },
   
+  inView: function(el){
+    var top = this.offsetTop(el);
+    var height = el.offsetHeight;
+
+
+    return (
+      top < (window.pageYOffset + window.innerHeight) &&
+      (top + height) > window.pageYOffset
+    );
+  },
+
+  percentInView: function(el){
+    var win = (window.pageYOffset+window.innerHeight);
+    var top = this.offsetTop(el);
+    return (win - top);
+  },
+
+  offsetTop: function(el){
+    var top = el.offsetTop;
+    while(el.offsetParent) {
+      el = el.offsetParent;
+      top += el.offsetTop;
+    }
+    return top;
+  },
+
   rollDice: function(odds){
     return (Math.floor(Math.random()*odds) === 0);
   }

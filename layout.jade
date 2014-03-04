@@ -1,11 +1,14 @@
 !!!
 html
   head
+    title Glitch
     link(href='http://fonts.googleapis.com/css?family=Archivo+Black', rel='stylesheet', type='text/css')
     link(rel="stylesheet", href="/css/main.css")
     link(rel="stylesheet", href="/css/glitch.css")
   body
     block content
     canvas
-    script(src='/build/glitch.min.js')
+    script(src='/js/helpers.js')
+    script(src='/js/filters.js')
+    script(src='/js/glitch.js')
     block scripts

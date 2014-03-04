@@ -14,10 +14,10 @@ Filter.prototype = {
 
     return this.context.getImageData(0,0, width, height);
   },
-  applyFilters: function(filters, index) {
+  applyFilters: function(filters) {
     this.imageData = this.imageData();
     for (var i=filters.length-1; i >= 0; i-=1){
-      this.filters[filters[i]](this.imageData, this.canvas, index);
+      this.filters[filters[i]](this.imageData, this.canvas);
     }
     return this.imageData;
   },
@@ -91,8 +91,8 @@ Filter.prototype = {
     }
     return pixels;
   },
-  glitch: function(pixels, img, index){
-      var glitchAmount = (250*index);
+  glitch: function(pixels, img){
+      var glitchAmount = 250;
       var data = pixels.data;
       var imgHeight = img.height;
       var imgWidth = img.width;
