@@ -1,4 +1,16 @@
-var Filter = function(image) {
+var Filter = function(image, options) {
+  this.options = JS.merge({
+    scale: {w: 800, h: 400}
+  }, options);
+  var filters = this.options.filters || {};
+  this.options.filters = JS.merge({
+      threshold: {
+        amount: 99
+      },
+      brightness: {
+        adjustment: 100
+      }
+  }, filters);
   this.canvas = document.createElement('canvas');
   this.context = this.canvas.getContext('2d');
   this.image = image;
@@ -8,25 +20,26 @@ Filter.prototype = {
   imageData: function() {
     var width = this.image.width;
     var height = this.image.height;
-    this.canvas.setAttribute('width', width);
-    this.canvas.setAttribute('height', height);
-    this.context.drawImage(this.image, 0, 0);
-
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.context.drawImage(this.image, 0, 0, this.options.scale.w, this.options.scale.h);
+    this.context.drawImage(this.canvas, 0, 0, this.options.scale.w, this.options.scale.h, 0, 0, width, height);
     return this.context.getImageData(0,0, width, height);
   },
   applyFilters: function(filters) {
     this.imageData = this.imageData();
     for (var i=filters.length-1; i >= 0; i-=1){
-      this.filters[filters[i]](this.imageData, this.canvas);
+      var filter = filters[i];
+      this.filters[filter](this.imageData, this.canvas, this.options.filters[filter]);
     }
-    return this.imageData;
+    return this.canvas;
   },
 
   filters: {
-    unfiltered: function(pixels) {
-      return pixels;
+    unfiltered: function() {
+      return;
     },
-    grayscale: function(pixels, args) {
+    grayscale: function(pixels, canvas) {
       var d = pixels.data;
       for (var i=0; i<d.length; i+=4) {
       var r = d[i];
@@ -37,40 +50,43 @@ Filter.prototype = {
       var v = 0.2126*r + 0.7152*g + 0.0722*b;
       d[i] = d[i+1] = d[i+2] = v;
       }
+      canvas.getContext('2d').putImageData(pixels, 0, 0);
       return pixels;
     },
-    brightness: function(pixels) {
-      var adjustment = 95;
+    brightness: function(pixels, canvas, options) {
+      var adjustment = options.adjustment;
       var d = pixels.data;
       for (var i=0; i<d.length; i+=4) {
         d[i] += adjustment;
         d[i+1] += adjustment;
         d[i+2] += adjustment;
       }
+      canvas.getContext('2d').putImageData(pixels, 0, 0);
       return pixels;
     },
-    threshold: function(pixels, threshold){
-      threshold = threshold || 11;
+    threshold: function(pixels, canvas, options){
       var d = pixels.data;
       for (var i=0; i<d.length; i+=4) {
         var r = d[i];
         var g = d[i+1];
         var b = d[i+2];
-        var v = (0.2126*r + 0.7152*g + 0.0722*b >= threshold) ? 255 : 0;
+        var v = (0.2126*r + 0.7152*g + 0.0722*b >= options.amount) ? 255 : 0;
         d[i] = d[i+1] = d[i+2] = v;
       }
+      canvas.getContext('2d').putImageData(pixels, 0, 0);
       return pixels;
     },
-    noise: function(pixels){
+    noise: function(pixels, canvas){
       var d = pixels.data;
       for(var i=0;i<d.length;i=i+1){
         var end = d[Math.floor(Math.random()*d.length)];
         var start = d[Math.floor(Math.random()*end)];
         d[Math.floor(Math.random()*d.length)] = d[start];
       }
+      canvas.getContext('2d').putImageData(pixels, 0, 0);
       return pixels;
     },
-    redNoise: function(pixels){
+    redNoise: function(pixels, canvas){
       var d = pixels.data;
       var dataLength = d.length;
       for(var i=0;i<dataLength;i+=4){
@@ -78,9 +94,10 @@ Filter.prototype = {
         var start = Math.floor(Math.random()*end);
         d[i] = d[start];
       }
+      canvas.getContext('2d').putImageData(pixels, 0, 0);
       return pixels;
     },
-    red: function (pixels, args) {
+    red: function (pixels, canvas) {
     var d = pixels.data;
     for (var i = 0; i < d.length; i += 4) {
       var r = d[i];
@@ -89,6 +106,7 @@ Filter.prototype = {
       d[i] = (r+g+b)/3;
       d[i + 1] = d[i + 2] = 0;
     }
+    canvas.getContext('2d').putImageData(pixels, 0, 0);
     return pixels;
   },
   glitch: function(pixels, img){
@@ -110,7 +128,8 @@ Filter.prototype = {
           }
         }
       }
-      return pixels;
+      img.getContext('2d').putImageData(pixels, 0, 0);
+      return img;
     },
     pixelate: function(pixels, img){
       var ctx = img.getContext('2d');
@@ -130,20 +149,20 @@ Filter.prototype = {
       }
 
       var data = ctx.getImageData(0,0, w, h);
-      return data;
-    },
-    blur: function(pixels){
-      return this.convolution(pixels,[ 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9 ]);
+      ctx.drawImage(img, 0, 0, w, h, 0, 0, img.width, img.height);
     },
     scanlines: function(pixels, img){
       var ctx = img.getContext('2d');
       ctx.putImageData(pixels, 0, 0);
-      ctx.fillStyle = "rgb(255,255,255)";
+      ctx.fillStyle = "rgba(0,0,0, .2)";
       for (i = 0; i < img.height; i += 3) {
-        ctx.fillRect(0, i, img.width, 2);
+        ctx.fillRect(0, i, img.width, 1);
       }
       var data = ctx.getImageData(0,0,img.width,img.height);
       return data;
+    }/*,
+    blur: function(pixels){
+      return this.convolution(pixels,[ 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9 ]);
     },
     convolution: function(pixels, weights, opaque) {
       var side = Math.round(Math.sqrt(weights.length));
@@ -187,6 +206,6 @@ Filter.prototype = {
         }
       }
       return output;
-      }
+      }*/
     }
 };

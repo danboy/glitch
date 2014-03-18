@@ -12,7 +12,8 @@ module.exports = function(grunt) {
         'Gruntfile.js',
         'js/helpers.js',
         'js/filters.js',
-        'js/glitch.js'
+        'js/glitch.js',
+        'js/image-glitch.js'
       ]
     },
     uglify: {

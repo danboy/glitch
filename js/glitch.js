@@ -1,16 +1,29 @@
 var Glitch = function(el, images, options) {
   this.options = JS.merge({
-    animationLength: 500,
-    animationFrames: 10,
-    delay: 20000,
-    filters: ['red', 'glitch', 'brightness']
+    animationLength: 800,
+    animationFrames: 6,
+    filterCount: 3,
+    randomize: false,
+    filterOptions: {
+      scale: {
+        w: 500, h: 200
+      },
+      filters: {
+        brightness: {
+          adjustment: 25
+        }
+      }
+    },
+    delay: 20000
   }, options);
+  this.setCache(el);
+  if(!this.options.filters){this.setFilters();}
   this.el = document.querySelectorAll(el)[0];
   JS.addClass(this.el, 'glitch');
   this.canvas = document.createElement('canvas');
   JS.addClass(this.canvas, 'glitch-canvas');
-  this.context = this.canvas.getContext('2d');
   this.images = images;
+  this.context = this.canvas.getContext('2d');
   this.init();
 };
 
@@ -19,9 +32,22 @@ Glitch.prototype = {
     this.currentImageIndex = 0;
     this.firstRun = true;
     this.reverseImages = false;
-    this.appendCanvas();
     this.drawImage();
+    this.appendCanvas();
     this.watchViewport();
+  },
+  setCache: function(el){
+    //todo do localstorage or something here.
+    this.id = el;
+    window[this.id] = [];
+  },
+  setFilters: function(){
+    var filter = new Filter();
+    this.options.filters = [];
+    for(var key in filter.filters){
+      if(this.rollDice(3) === true && this.options.filters.length < this.options.filterCount){this.options.filters.push(key);}
+    }
+    if (this.options.filters.length === 0){this.options.filters = ['glitch'];}
   },
 
   appendCanvas: function() {
@@ -36,18 +62,23 @@ Glitch.prototype = {
   },
 
   drawImage: function(){
+    window[this.id].glitchImages = window[this.id].glitchImages || [];
     if(this.isStopped){return false;}
-    var image = new Image();
+    var image = this.image = new Image();
     image.src = this.selectImage();
     image.onload = function(){
-      var filteredImages = this.createFilteredImages(image);
+      if(!window[this.id].glitchImages[image.src]){
+        var filteredImages = this.createFilteredImages(image);
+      }else{
+        this.animate(window[this.id].glitchImages[image.src]);
+      }
     }.bind(this);
   },
 
   applyDataToCanvas: function(data, offset){
     offset = offset || 0;
     this.setCanvasClass(data);
-    this.context.putImageData(data, offset, 0);
+    this.context.drawImage(data, 0, 0, data.width, data.height, 0, 0, data.width, data.height);
   },
 
   setCanvasClass: function(img){
@@ -55,25 +86,25 @@ Glitch.prototype = {
   },
 
   intervalLength:function(){
-    var intervalLength = (this.currentImageIndex === 0) ? Math.floor(Math.random()*this.options.delay) : this.options.animationLength/(this.options.animationFrames+1);
+    var intervalLength = (this.currentImageIndex === 0) ? Math.floor(Math.random()*this.options.delay) : Math.floor(this.options.animationLength/(this.options.animationFrames+1));
     return intervalLength;
   },
 
   createFilteredImages: function(image){
-    if(this.isStopped){return false;}
+    if(this.isStopped || !this.inView(this.el)){this.wait(this.createFilteredImages.bind(this));return false;}
     var filteredArray = [];
 
     for(var i=0; i< this.options.animationFrames; i++) {
-      var filters = (i === 0) ? ['unfiltered'] : this.options.filters;
-      filteredArray[i] = this.filterImage(image, filters);
+      filteredArray[i] = this.filterImage(image, this.options.filters);
     }
 
     if(this.firstRun){
-      this.applyDataToCanvas(filteredArray[0]);
+      this.applyDataToCanvas(this.image);
       this.firstRun = false;
     }
     this.lastArray = this.filteredArray || filteredArray;
     this.filteredArray = filteredArray;
+    window[this.id].glitchImages[this.image.src] = filteredArray;
     this.animate(filteredArray);
   },
 
@@ -94,13 +125,14 @@ Glitch.prototype = {
       }.bind(this), this.intervalLength());
     } else {
       this.currentImageIndex = 0;
-      this.applyDataToCanvas(images[0]);
+      this.applyDataToCanvas(this.image);
+      if(this.options.randomize){this.setFilters();}
       this.drawImage();
     }
   },
 
   wait: function(cb){
-    setTimeout(function(){cb(this.filteredArray);}.bind(this), 10000);
+    setTimeout(function(){cb(this.filteredArray);}.bind(this), this.options.delay);
   },
 
   slide: function(current, previous, left){
@@ -114,12 +146,11 @@ Glitch.prototype = {
 
   start: function(){
     this.isStopped = false;
-    //this.animate(this.filteredArray);
   },
 
   filterImage: function(image, filters){
-    var glitch = new Filter(image);
-    return glitch.applyFilters(filters);
+    var glitch = new Filter(image, this.options.filterOptions);
+    return glitch.applyFilters(filters.reverse());
   },
 
   drawOriginalImage: function(){
@@ -141,7 +172,6 @@ Glitch.prototype = {
     var top = this.offsetTop(el);
     var height = el.offsetHeight;
 
-
     return (
       top < (window.pageYOffset + window.innerHeight) &&
       (top + height) > window.pageYOffset
@@ -149,9 +179,21 @@ Glitch.prototype = {
   },
 
   percentInView: function(el){
-    var win = (window.pageYOffset+window.innerHeight);
-    var top = this.offsetTop(el);
-    return (win - top);
+    var viewportHeight = window.innerHeight;
+    var scrollTop = window.pageYOffset;
+    var elementOffsetTop = this.offsetTop(el);
+    var elementHeight = el.offsetHeighteight;
+
+    if (elementOffsetTop > (scrollTop + viewportHeight)) {
+      return 0;
+    } else if ((elementOffsetTop + elementHeight) < scrollTop) {
+      return 100;
+    } else {
+      var distance = (scrollTop + viewportHeight) - elementOffsetTop;
+      var percentage = distance / ((viewportHeight + elementHeight) / 100);
+      percentage = Math.round(percentage);
+      return percentage;
+    }
   },
 
   offsetTop: function(el){
